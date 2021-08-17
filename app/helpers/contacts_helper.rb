@@ -18,4 +18,17 @@ module ContactsHelper
     summary << "#{t(:mobile_small)}: #{contact.mobile}" if contact.mobile.present?
     summary.join(', ')
   end
+
+  # Contact list for RSS/ATOM feeds.
+  #----------------------------------------------------------------------------
+  def contact_list(contact)
+    clist = ['']
+    clist << contact.title.titleize if contact.title?
+    clist << contact.department if contact.department?
+    clist.last += " #{t(:at)} #{contact.account.name}" if contact.account&.name?
+    clist << contact.email if contact.email.present?
+    clist << "#{t(:phone_small)}: #{contact.phone}" if contact.phone.present?
+    clist << "#{t(:mobile_small)}: #{contact.mobile}" if contact.mobile.present?
+    clist.join(', ')
+  end
 end
