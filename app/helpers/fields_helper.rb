@@ -6,4 +6,13 @@
 # See MIT-LICENSE file or http://www.opensource.org/licenses/mit-license.php
 #------------------------------------------------------------------------------
 module FieldsHelper
+  def field_edit_as_options(field = nil)
+    # Return every available field_type if no restriction
+    options = (field.as.present? ? field.available_as : Field.field_types).keys
+    options.map { |k| [t("field_types.#{k}.title"), k] }
+  end
+
+  def field_group_options
+    FieldGroup.all.map { |fg| [fg.name, fg.id] }
+  end
 end
