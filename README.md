@@ -2,8 +2,7 @@
 
 ### An open source, Ruby on Rails World's Remote-work platform.
 
-This project is based on [Fat Free CRM][fatfreecrm]
-[fatfreecrm]: https://github.com/fatfreecrm/fat_free_crm
+This project is based on [Fat Free CRM](https://github.com/fatfreecrm/fat_free_crm)
 
 Pull requests and bug reports are always welcome!
 
