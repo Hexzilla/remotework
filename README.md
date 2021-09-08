@@ -1,6 +1,6 @@
 # Remotework
 
-### An open source, Ruby on Rails World's Remote-work platform.
+### An open source, World's Remote-work platform with Ruby on Rails. 
 
 This project is based on [Fat Free CRM](https://github.com/fatfreecrm/fat_free_crm)
 
