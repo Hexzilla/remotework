@@ -1,0 +1,120 @@
+# frozen_string_literal: true
+
+# Copyright (c) 2008-2013 Michael Dvorkin and contributors.
+#
+# Fat Free CRM is freely distributable under the terms of MIT license.
+# See MIT-LICENSE file or http://www.opensource.org/licenses/mit-license.php
+#------------------------------------------------------------------------------
+class SubscribesController < ApplicationController
+  before_action :set_current_tab, only: %i[index show]
+  before_action :update_sidebar, only: :index
+
+  # GET /subscribes
+  #----------------------------------------------------------------------------
+  def index
+    @view = view
+    @subscribes = subscribe.find_all_grouped(current_user, @view)
+
+    respond_with @subscribes do |format|
+      format.xls { render layout: 'header' }
+      format.csv { render csv: @subscribes.map(&:second).flatten }
+      format.xml { render xml: @subscribes, except: [:subscribed_users] }
+    end
+  end
+
+  # GET /subscribes/1
+  #----------------------------------------------------------------------------
+  def show
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    respond_with(@subscribe)
+  end
+
+  # GET /subscribes/new
+  #----------------------------------------------------------------------------
+  def new
+    @view = view
+    @subscribe = subscribe.new
+    @bucket = Setting.unroll(:subscribe_bucket)[1..-1] << [t(:due_specific_date, default: 'On Specific Date...'), :specific_time]
+    @category = Setting.unroll(:subscribe_category)
+
+    if params[:related]
+      model, id = params[:related].split(/_(\d+)/)
+      if related = model.classify.constantize.my(current_user).find_by_id(id)
+        instance_variable_set("@asset", related)
+      else
+        respond_to_related_not_found(model) && return
+      end
+    end
+
+    respond_with(@subscribe)
+  end
+
+  
+
+  protected
+
+  def subscribe_params
+    return {} unless params[:subscribe]
+
+    params.require(:subscribe).permit(
+      :user_id,
+      :assigned_to,
+      :completed_by,
+      :name,
+      :asset_id,
+      :asset_type,
+      :priority,
+      :category,
+      :bucket,
+      :due_at,
+      :completed_at,
+      :deleted_at,
+      :background_info,
+      :calendar
+    )
+  end
+
+  private
+
+  # Yields array of current filters and updates the session using new values.
+  #----------------------------------------------------------------------------
+  def update_session
+    name = "filter_by_subscribe_#{@view}"
+    filters = (session[name].nil? ? [] : session[name].split(","))
+    yield filters
+    session[name] = filters.uniq.join(",")
+  end
+
+  # Collect data necessary to render filters sidebar.
+  #----------------------------------------------------------------------------
+  def update_sidebar
+    @view = view
+    @subscribe_total = subscribe.totals(current_user, @view)
+
+    # Update filters session if we added, deleted, or completed a subscribe.
+    if @subscribe
+      update_session do |filters|
+        if @empty_bucket # deleted, completed, rescheduled, or reassigned and need to hide a bucket
+          filters.delete(@empty_bucket)
+        elsif !@subscribe.deleted_at && !@subscribe.completed_at # created new subscribe
+          filters << @subscribe.computed_bucket
+        end
+      end
+    end
+
+    # Create default filters if filters session is empty.
+    name = "filter_by_subscribe_#{@view}"
+    unless session[name]
+      filters = @subscribe_total.keys.select { |key| key != :all && @subscribe_total[key] != 0 }.join(",")
+      session[name] = filters unless filters.blank?
+    end
+  end
+
+  # Ensure view is allowed
+  #----------------------------------------------------------------------------
+  def view
+    view = params[:view]
+    views = subscribe::ALLOWED_VIEWS
+    views.include?(view) ? view : views.first
+  end
+end
