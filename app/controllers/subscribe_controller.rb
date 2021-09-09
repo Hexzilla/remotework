@@ -49,6 +49,57 @@ class SubscribesController < ApplicationController
     respond_with(@subscribe)
   end
 
+  # GET /subscribes/1/edit                                                      AJAX
+  #----------------------------------------------------------------------------
+  def edit
+    @view = view
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    @bucket = Setting.unroll(:subscribe_bucket)[1..-1] << [t(:due_specific_date, default: 'On Specific Date...'), :specific_time]
+    @category = Setting.unroll(:subscribe_category)
+    @asset = @subscribe.asset if @subscribe.asset_id?
+
+    @previous = subscribe.tracked_by(current_user).find_by_id(Regexp.last_match[1]) || Regexp.last_match[1].to_i if params[:previous].to_s =~ /(\d+)\z/
+
+    respond_with(@subscribe)
+  end
+
+  # POST /subscribes
+  #----------------------------------------------------------------------------
+  def create
+    @view = view
+    @subscribe = subscribe.new(subscribe_params) # NOTE: we don't display validation messages for subscribes.
+
+    respond_with(@subscribe) do |_format|
+      if @subscribe.save
+        update_sidebar if called_from_index_page?
+      end
+    end
+  end
+
+  # PUT /subscribes/1
+  #----------------------------------------------------------------------------
+  def update
+    @view = view
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    @subscribe_before_update = @subscribe.dup
+
+    @subscribe_before_update.bucket = if @subscribe.due_at && (@subscribe.due_at < Date.today.to_time)
+                                   "overdue"
+                                 else
+                                   @subscribe.computed_bucket
+                                 end
+
+    respond_with(@subscribe) do |_format|
+      if @subscribe.update_attributes(subscribe_params)
+        @subscribe.bucket = @subscribe.computed_bucket
+        if called_from_index_page?
+          @empty_bucket = @subscribe_before_update.bucket if subscribe.bucket_empty?(@subscribe_before_update.bucket, current_user, @view)
+          update_sidebar
+        end
+      end
+    end
+  end
+
   
 
   protected
