@@ -100,7 +100,63 @@ class SubscribesController < ApplicationController
     end
   end
 
-  
+  # DELETE /subscribes/1
+  #----------------------------------------------------------------------------
+  def destroy
+    @view = view
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    @subscribe.destroy
+
+    # Make sure bucket's div gets hidden if we're deleting last subscribe in the bucket.
+    @empty_bucket = params[:bucket] if subscribe.bucket_empty?(params[:bucket], current_user, @view)
+
+    update_sidebar if called_from_index_page?
+    respond_with(@subscribe)
+  end
+
+  # PUT /subscribes/1/complete
+  #----------------------------------------------------------------------------
+  def complete
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    @subscribe&.update_attributes(completed_at: Time.now, completed_by: current_user.id)
+
+    # Make sure bucket's div gets hidden if it's the last completed subscribe in the bucket.
+    @empty_bucket = params[:bucket] if subscribe.bucket_empty?(params[:bucket], current_user)
+
+    update_sidebar unless params[:bucket].blank?
+    respond_with(@subscribe)
+  end
+
+  # PUT /subscribes/1/uncomplete
+  #----------------------------------------------------------------------------
+  def uncomplete
+    @subscribe = subscribe.tracked_by(current_user).find(params[:id])
+    @subscribe&.update_attributes(completed_at: nil, completed_by: nil)
+
+    # Make sure bucket's div gets hidden if we're deleting last subscribe in the bucket.
+    @empty_bucket = params[:bucket] if subscribe.bucket_empty?(params[:bucket], current_user, @view)
+
+    update_sidebar
+    respond_with(@subscribe)
+  end
+
+  # POST /subscribes/auto_complete/query                                        AJAX
+  #----------------------------------------------------------------------------
+  # Handled by ApplicationController :auto_complete
+
+  # Ajax request to filter out a list of subscribes.                            AJAX
+  #----------------------------------------------------------------------------
+  def filter
+    @view = view
+
+    update_session do |filters|
+      if params[:checked].true?
+        filters << params[:filter]
+      else
+        filters.delete(params[:filter])
+      end
+    end
+  end
 
   protected
 
