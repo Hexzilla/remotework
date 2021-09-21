@@ -8,4 +8,8 @@
 class PasswordsController < Devise::PasswordsController
   respond_to :html
   append_view_path 'app/views/devise'
+
+  def change
+    redirect_to change_password
+  end
 end
