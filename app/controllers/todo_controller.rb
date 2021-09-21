@@ -9,7 +9,7 @@ class TodoController < ApplicationController
   before_action :set_current_tab, only: %i[index show]
   before_action :update_sidebar, only: :index
 
-  # GET /tasks
+  # GET /todos
   #----------------------------------------------------------------------------
   def index
     @view = view
@@ -20,5 +20,18 @@ class TodoController < ApplicationController
       format.csv { render csv: @todo.map(&:second).flatten }
       format.xml { render xml: @todo, except: [:subscribed_users] }
     end
+  end
+
+  # PUT /todos/1/complete
+  #----------------------------------------------------------------------------
+  def complete
+    @todo = Todo.tracked_by(current_user).find(params[:id])
+    @todo&.update_attributes(completed_at: Time.now, completed_by: current_user.id)
+
+    # Make sure bucket's div gets hidden if it's the last completed task in the bucket.
+    @empty_bucket = params[:bucket] if Todo.bucket_empty?(params[:bucket], current_user)
+
+    update_sidebar unless params[:bucket].blank?
+    respond_with(@todo)
   end
 end
