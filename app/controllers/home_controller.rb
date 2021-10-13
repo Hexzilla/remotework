@@ -198,4 +198,13 @@ class HomeController < ApplicationController
       %w[zero one two].index(words.first).send(words.last) if %w[one two].include?(words.first) && %w[hour day days week weeks month].include?(words.last)
     end
   end
+
+  #----------------------------------------------------------------------------
+  def activity_history
+    history = current_user.pref[:activity_history]
+    if history
+      words = history.split("_") # "two_weeks" => 2.weeks
+      %w[zero one two].index(words.first).send(words.last) if %w[one two].include?(words.first) && %w[hour day days week weeks month].include?(words.last)
+    end
+  end
 end
