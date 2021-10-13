@@ -34,4 +34,17 @@ class TodoController < ApplicationController
     update_sidebar unless params[:bucket].blank?
     respond_with(@todo)
   end
+
+  # PUT /todos/1/uncomplete
+  #----------------------------------------------------------------------------
+  def uncomplete
+    @todo = Todo.tracked_by(current_user).find(params[:id])
+    @todo&.update_attributes(completed_at: nil, completed_by: nil)
+
+    # Make sure bucket's div gets hidden if we're deleting last todo in the bucket.
+    @empty_bucket = params[:bucket] if Todo.bucket_empty?(params[:bucket], current_user, @view)
+
+    update_sidebar
+    respond_with(@todo)
+  end
 end
