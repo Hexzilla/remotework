@@ -93,6 +93,27 @@ class HomeController < ApplicationController
     head :ok
   end
 
+  # GET /home/location                                                     AJAX
+  #----------------------------------------------------------------------------
+  def location
+    location = params[:state].location
+    if %w[Collapsed Expanded].include?(location)
+      if (model_type = params[:type].to_s).present?
+        if %w[comment email].include?(model_type)
+          model = model_type.camelize.constantize
+          item = model.find(params[:id])
+          item.update_attribute(:location, location)
+        end
+      else
+        comments, emails = params[:id].split("+")
+        Comment.where(id: comments.split(',')).update_all(location: location) unless comments.blank?
+        Email.where(id: emails.split(',')).update_all(location: location) unless emails.blank?
+      end
+    end
+
+    head :ok
+  end
+
   # GET /home/timezone                                                     AJAX
   #----------------------------------------------------------------------------
   def timezone
