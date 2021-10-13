@@ -58,6 +58,20 @@ class HomeController < ApplicationController
     head :ok
   end
 
+  # GET /home/toggle/timeline                                                      AJAX
+  #----------------------------------------------------------------------------
+  def toggle_timeline
+    if (toggle_param = params[:id]&.to_times)
+      session[:toggle_to_times] ||= {}
+      if session[:toggle_times][toggle_param]
+        session[:toggle_times].delete(toggle_param)
+      else
+        session[:toggle_times][toggle_param] = true
+      end
+    end
+    head :ok
+  end
+
   # GET /home/timeline                                                     AJAX
   #----------------------------------------------------------------------------
   def timeline
