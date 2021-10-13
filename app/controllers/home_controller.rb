@@ -18,6 +18,15 @@ class HomeController < ApplicationController
     respond_with(@activities)
   end
 
+  #----------------------------------------------------------------------------
+  def create
+    @activities = get_activities
+    @my_tasks = Task.visible_on_dashboard(current_user).includes(:user, :asset).by_due_at
+    @my_opportunities = Opportunity.visible_on_dashboard(current_user).includes(:account, :user, :tags).by_closes_on.by_amount
+    @my_accounts = Account.visible_on_dashboard(current_user).includes(:user, :tags).by_name
+    respond_with(@activities)
+  end
+
   # GET /home/options                                                      AJAX
   #----------------------------------------------------------------------------
   def options
@@ -203,7 +212,7 @@ class HomeController < ApplicationController
   def activity_history
     history = current_user.pref[:activity_history]
     if history
-      words = history.split("_") # "two_weeks" => 2.weeks
+      words = history.split("_")
       %w[zero one two].index(words.first).send(words.last) if %w[one two].include?(words.first) && %w[hour day days week weeks month].include?(words.last)
     end
   end
